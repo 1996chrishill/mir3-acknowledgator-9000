@@ -23,6 +23,8 @@ class Config:
     log_level: str
     timeout_ms: int
     cors_origins: tuple[str, ...]
+    auto_interval_s: int
+    auto_max_duration_s: int
 
     @property
     def state_file(self) -> Path:
@@ -65,4 +67,6 @@ def load() -> Config:
         cors_origins=tuple(
             o.strip().rstrip("/") for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()
         ),
+        auto_interval_s=max(30, int(os.environ.get("AUTO_ACK_INTERVAL_S", "240"))),
+        auto_max_duration_s=max(0, int(os.environ.get("AUTO_ACK_MAX_DURATION_S", "900"))),
     )

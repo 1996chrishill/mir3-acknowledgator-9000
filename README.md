@@ -13,6 +13,9 @@ Small API server that logs into your organization's MIR3 recipient portal with a
 | POST | `/ack-all` | Acks every pending notification |
 | POST | `/ack/{event_hist_id}` | Acks one notification (ID from `/pending`) |
 | GET | `/history?limit=N` | Past ack attempts from `history.json`, newest first (`limit` optional) |
+| GET | `/auto` | Auto-ack job status |
+| POST | `/auto/start` | Start the auto-ack job (runs ack-all now, then every `AUTO_ACK_INTERVAL_S`) |
+| POST | `/auto/stop` | Stop the auto-ack job (a run in progress finishes) |
 
 One call = one run. Calls wait and return the result.
 
@@ -47,7 +50,22 @@ curl -X POST http://192.168.0.104:8080/ack-all
 }
 ```
 
-`/history` returns `{"status": "success", "count": N, "history": [...]}`, where each entry is a notification plus `timestamp`, `result` (`acked`/`failed`) and, for failures, `error`. It doesn't take the run lock, so it works while a call is running.
+`/history` returns `{"status": "success", "count": N, "history": [...]}`, where each entry is a notification plus `timestamp`, `result` (`acked`/`failed`) and, for failures, `error`. It doesn't take the run lock, so it works while a call is running. History entries also have `source`: `manual` or `auto`.
+
+### Auto-ack job
+
+The job is **off at boot**; only `POST /auto/start` turns it on. It runs ack-all immediately, then every `AUTO_ACK_INTERVAL_S` seconds (default 240) until `POST /auto/stop` or until `AUTO_ACK_MAX_DURATION_S` (default 900 = 15 min; `0` = no limit) has passed since start. State is in memory only, so a restart or redeploy turns it off. A run waits for any manual call to finish rather than failing as busy; while a run is in progress, manual calls get `409`. `DRY_RUN` applies.
+
+`/auto`, `/auto/start` and `/auto/stop` all return the status:
+
+```json
+{"status": "success", "enabled": true, "running": false, "interval_s": 240, "max_duration_s": 900,
+ "started_at": "...", "stops_at": "...", "stopped_at": null, "stop_reason": null,
+ "last_run_at": "...", "next_run_at": "...", "runs": 3,
+ "last_result": {"code": 200, "status": "success", "acked": [], "failed": [], "pending_before": 0, "dry_run": false, "duration_s": 3.2}}
+```
+
+`last_result` is the full ack-all response body plus its HTTP `code`. When off, `stop_reason` is `user` or `max_duration` (null if never started).
 
 ## Configuration (env vars)
 
@@ -63,6 +81,8 @@ curl -X POST http://192.168.0.104:8080/ack-all
 | `MIR3_TIMEOUT_MS` | `30000` | per page action |
 | `API_HOST` | `0.0.0.0` | bind inside container; leave as is |
 | `DATA_DIR` | `/data` | |
+| `AUTO_ACK_INTERVAL_S` | `240` | auto-ack job interval (min 30) |
+| `AUTO_ACK_MAX_DURATION_S` | `900` | auto-ack job stops itself this long after start; `0` = no limit |
 | `CORS_ORIGINS` | — | comma-separated browser origins allowed to call the API, e.g. `https://mir3-ack.example.com`. Unset = no CORS headers |
 
 ## Data (`/data` volume)

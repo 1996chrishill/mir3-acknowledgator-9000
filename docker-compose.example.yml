@@ -14,6 +14,8 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       TZ: ${TZ:-America/New_York}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
+      AUTO_ACK_INTERVAL_S: ${AUTO_ACK_INTERVAL_S:-240}
+      AUTO_ACK_MAX_DURATION_S: ${AUTO_ACK_MAX_DURATION_S:-900}   # auto-ack stops itself after this; 0 = no limit
     volumes:
       - mir3-data:/data   # session cookies + history.json
     shm_size: "256mb"
