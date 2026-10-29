@@ -21,6 +21,12 @@ class History:
             log.warning("history.json unreadable (%s); starting new", e)
             return []
 
+    def recent(self, limit: int | None = None) -> list:
+        """Entries newest first, optionally capped at `limit`."""
+        data = self._read()
+        data.reverse()
+        return data[:limit] if limit else data
+
     def add(self, entries: list[dict]) -> None:
         if not entries:
             return

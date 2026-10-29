@@ -22,6 +22,7 @@ class Config:
     dry_run: bool
     log_level: str
     timeout_ms: int
+    cors_origins: tuple[str, ...]
 
     @property
     def state_file(self) -> Path:
@@ -61,4 +62,7 @@ def load() -> Config:
         dry_run=_bool("DRY_RUN"),
         log_level=os.environ.get("LOG_LEVEL", "INFO").upper(),
         timeout_ms=int(os.environ.get("MIR3_TIMEOUT_MS", "30000")),
+        cors_origins=tuple(
+            o.strip().rstrip("/") for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()
+        ),
     )

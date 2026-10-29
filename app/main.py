@@ -4,7 +4,8 @@ import time
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from . import config
@@ -36,6 +37,15 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="mir3-acknowledgator-9000", lifespan=lifespan)
+
+# Browser origins (e.g. the frontend) allowed to call the API. Unset = no CORS headers.
+if cfg.cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(cfg.cors_origins),
+        allow_methods=["GET", "POST"],
+        allow_headers=["*"],
+    )
 
 
 def ok(**body) -> JSONResponse:
@@ -86,6 +96,12 @@ def ack_response(acked, failed, pending_before, started) -> JSONResponse:
 @app.get("/health")
 async def health():
     return {"status": "ok", "busy": lock.locked(), "dry_run": cfg.dry_run}
+
+
+@app.get("/history")
+async def get_history(limit: int | None = Query(None, ge=1)):
+    items = history.recent(limit)
+    return ok(count=len(items), history=items)
 
 
 @app.get("/pending")

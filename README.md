@@ -12,6 +12,7 @@ Small API server that logs into your organization's MIR3 recipient portal with a
 | GET | `/pending` | Lists pending notifications (no changes) |
 | POST | `/ack-all` | Acks every pending notification |
 | POST | `/ack/{event_hist_id}` | Acks one notification (ID from `/pending`) |
+| GET | `/history?limit=N` | Past ack attempts from `history.json`, newest first (`limit` optional) |
 
 One call = one run. Calls wait and return the result.
 
@@ -46,6 +47,8 @@ curl -X POST http://192.168.0.104:8080/ack-all
 }
 ```
 
+`/history` returns `{"status": "success", "count": N, "history": [...]}`, where each entry is a notification plus `timestamp`, `result` (`acked`/`failed`) and, for failures, `error`. It doesn't take the run lock, so it works while a call is running.
+
 ## Configuration (env vars)
 
 | Var | Default | Notes |
@@ -60,11 +63,12 @@ curl -X POST http://192.168.0.104:8080/ack-all
 | `MIR3_TIMEOUT_MS` | `30000` | per page action |
 | `API_HOST` | `0.0.0.0` | bind inside container; leave as is |
 | `DATA_DIR` | `/data` | |
+| `CORS_ORIGINS` | — | comma-separated browser origins allowed to call the API, e.g. `https://mir3-ack.example.com`. Unset = no CORS headers |
 
 ## Data (`/data` volume)
 
 - `session.json`: saved browser cookies, so restarts reuse the login. If the session expires, it logs in again automatically.
-- `history.json`: log of every ack attempt (timestamp, title, incident, result, error). Keeps the last 5000.
+- `history.json`: log of every ack attempt (timestamp, title, incident, result, error). Keeps the last 5000. Exposed via `GET /history`.
 
 Logs go to stdout (Portainer → container → Logs).
 

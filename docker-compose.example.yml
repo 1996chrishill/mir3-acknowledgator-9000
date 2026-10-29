@@ -13,6 +13,7 @@ services:
       DRY_RUN: ${DRY_RUN:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       TZ: ${TZ:-America/New_York}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
     volumes:
       - mir3-data:/data   # session cookies + history.json
     shm_size: "256mb"
