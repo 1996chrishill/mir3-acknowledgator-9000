@@ -44,6 +44,10 @@ def load() -> Config:
     if missing:
         sys.exit(f"Missing required env: {', '.join(missing)}")
 
+    base_url = base_url.strip()
+    if "://" not in base_url:
+        base_url = f"https://{base_url}"
+
     data_dir = Path(os.environ.get("DATA_DIR", "/data"))
     data_dir.mkdir(parents=True, exist_ok=True)
 
