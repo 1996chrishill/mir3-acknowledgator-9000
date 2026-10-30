@@ -167,5 +167,6 @@ class Mir3Client:
             raise Mir3Error("No 'Acknowledge' option on reply page")
         await radio.first.check()
         async with page.expect_navigation():
-            await page.click('input[name="saveNav"]')
+            # Save is <button name="saveNav" class="btn btn-success">Save</button>
+            await page.click('button[name="saveNav"], input[name="saveNav"]')
         log.info("Submitted ack for %s", n.title)
